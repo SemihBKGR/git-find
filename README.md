@@ -1,3 +1,3 @@
 # git-find
 
-utility tool to find something on git comments
+utility tool to find something on git commits
