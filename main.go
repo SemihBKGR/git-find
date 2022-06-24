@@ -2,21 +2,38 @@ package main
 
 import (
 	"fmt"
-	"os/exec"
+	"os"
 )
 
 func main() {
 
-	c := exec.Command("git", "--no-pager", "diff", "HEAD~1", "HEAD")
+	//c := exec.Command("git", "--no-pager", "diff", "HEAD~1", "HEAD")
+	//
+	//r, err := c.Output()
+	//
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//s := string(r)
+	//
+	//fmt.Println(s)
 
-	r, err := c.Output()
+	bytes, err := os.ReadFile("testdata/diff.txt")
 
 	if err != nil {
 		panic(err)
 	}
 
-	s := string(r)
+	diffs, err := parseDiff(string(bytes))
 
-	fmt.Println(s)
+	if err != nil {
+		panic(err)
+	}
+	foundDiffs := find(diffs, "Diff")
+
+	for _, foundDiff := range foundDiffs {
+		fmt.Println(foundDiff)
+	}
 
 }

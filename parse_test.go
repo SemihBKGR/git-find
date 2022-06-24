@@ -43,7 +43,7 @@ func TestFind(t *testing.T) {
 
 	expectedFoundDiffsLen := 6
 
-	foundDiffs := find(diffs, "diff")
+	foundDiffs := find(diffs, "Diff")
 
 	if len(foundDiffs) != expectedFoundDiffsLen {
 		t.Fatalf("expected len of found diffs is %d, but actual value is %d", expectedFoundDiffsLen, len(foundDiffs))
