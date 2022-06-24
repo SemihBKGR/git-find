@@ -29,20 +29,20 @@ func main() {
 
 	fmt.Println(s)
 
-	diff, err := parseDiff(s)
+	diffs, err := parseDiff(s)
 
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(diff)
+	fmt.Printf("diffs len: %d\n", len(diffs))
 
-	fmt.Println("Find result")
+	fmt.Println("find result")
 
-	lines := diff.find("Diff")
+	lines := find(diffs, "Diff")
 
 	for _, line := range lines {
-		fmt.Printf("find line: %s\n", line.Content)
+		fmt.Printf("found line: %s\n", line.Content)
 	}
 
 }
