@@ -37,4 +37,12 @@ func main() {
 
 	fmt.Println(diff)
 
+	fmt.Println("Find result")
+
+	lines := diff.find("Diff")
+
+	for _, line := range lines {
+		fmt.Printf("find line: %s\n", line.Content)
+	}
+
 }

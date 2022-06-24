@@ -1,16 +1,18 @@
 package main
 
-import "strings"
+import (
+	"strings"
+)
 
 type Diff struct {
 	StartCommit  string
 	EndCommit    string
-	ChangedFiles []DiffFile
+	ChangedFiles []*DiffFile
 }
 
 type DiffFile struct {
 	Filename     string
-	ChangesLines []DiffLine
+	ChangedLines []*DiffLine
 }
 
 type DiffLine struct {
@@ -22,7 +24,7 @@ type DiffLine struct {
 func parseDiff(s string) (*Diff, error) {
 	diff := Diff{}
 	changeFiles := strings.Split(s, "diff --git")
-	diff.ChangedFiles = make([]DiffFile, 0, len(changeFiles))
+	diff.ChangedFiles = make([]*DiffFile, 0, len(changeFiles))
 	for _, changeFile := range changeFiles {
 		diffFile := DiffFile{}
 		changes := strings.Split(changeFile, "@@")
@@ -31,7 +33,7 @@ func parseDiff(s string) (*Diff, error) {
 		filename := parseMetadata(fileMetadata)
 		diffFile.Filename = filename
 
-		diffFile.ChangesLines = make([]DiffLine, 0, len(changes)-1)
+		diffFile.ChangedLines = make([]*DiffLine, 0, len(changes)-1)
 		for i := 1; i < len(changes); i++ {
 			lines := strings.Split(changes[i], "\n")
 			//todo: calculate line number
@@ -41,11 +43,11 @@ func parseDiff(s string) (*Diff, error) {
 						Content: line[1:],
 						IsAdded: line[0] == '+',
 					}
-					diffFile.ChangesLines = append(diffFile.ChangesLines, diffLine)
+					diffFile.ChangedLines = append(diffFile.ChangedLines, &diffLine)
 				}
 			}
 		}
-		diff.ChangedFiles = append(diff.ChangedFiles, diffFile)
+		diff.ChangedFiles = append(diff.ChangedFiles, &diffFile)
 	}
 	return &diff, nil
 }
@@ -57,4 +59,16 @@ func parseMetadata(m string) string {
 		}
 	}
 	return ""
+}
+
+func (d *Diff) find(k string) []*DiffLine {
+	diffLines := make([]*DiffLine, 0, 10)
+	for _, cf := range d.ChangedFiles {
+		for _, cl := range cf.ChangedLines {
+			if strings.Contains(cl.Content, k) {
+				diffLines = append(diffLines, cl)
+			}
+		}
+	}
+	return diffLines
 }
