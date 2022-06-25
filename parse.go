@@ -29,7 +29,7 @@ func parseDiff(s string) ([]*diff, error) {
 		filename := parseMetadata(changedSnippets[0])
 		for j := 1; j < len(changedSnippets); j++ {
 			lines := strings.Split(changedSnippets[j], "\n")
-			minuslineNumber, plusLineNumber := extractLineNumber(lines[0])
+			minusLineNumber, plusLineNumber := extractLineNumber(lines[0])
 			for k := 1; k < len(lines); k++ {
 				line := lines[k]
 				if len(line) > 0 && (line[0] == '+' || line[0] == '-') {
@@ -38,10 +38,10 @@ func parseDiff(s string) ([]*diff, error) {
 							filename:   filename,
 							content:    line[1:],
 							isAdded:    false,
-							lineNumber: minuslineNumber,
+							lineNumber: minusLineNumber,
 						}
 						diffs = append(diffs, &diffLine)
-						minuslineNumber++
+						minusLineNumber++
 					} else {
 						diffLine := diff{
 							filename:   filename,
@@ -53,7 +53,7 @@ func parseDiff(s string) ([]*diff, error) {
 						plusLineNumber++
 					}
 				} else {
-					minuslineNumber++
+					minusLineNumber++
 					plusLineNumber++
 				}
 			}
@@ -109,14 +109,4 @@ func splitByLinePrefix(s, p string) []string {
 		sb.WriteString(line + "\n")
 	}
 	return append(split, sb.String())
-}
-
-func find(diffs []*diff, keyword string) []*diff {
-	foundDiffs := make([]*diff, 0, 10)
-	for _, d := range diffs {
-		if strings.Contains(d.content, keyword) {
-			foundDiffs = append(foundDiffs, d)
-		}
-	}
-	return foundDiffs
 }
