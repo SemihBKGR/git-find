@@ -15,7 +15,6 @@ var (
 	help       bool
 	removed    bool
 	regex      bool
-	search     string
 )
 
 func init() {
@@ -24,8 +23,8 @@ func init() {
 		return
 	}
 
-	flag.StringVar(&commit, "commit", "", "commit on which you want to find")
-	flag.BoolVar(&ignoreCase, "ignore-case", false, "case sensitivity")
+	flag.StringVar(&commit, "commit", "", "the commit on which you want to find")
+	flag.BoolVar(&ignoreCase, "ignore-case", false, "ignore case sensitivity")
 	flag.BoolVar(&help, "help", false, "print args")
 	flag.BoolVar(&removed, "removed", false, "include removed lines")
 	flag.BoolVar(&regex, "regex", false, "apply regex")
@@ -35,20 +34,6 @@ func init() {
 		flag.PrintDefaults()
 		os.Exit(0)
 	}
-
-	search = flag.Arg(0)
-
-	if search == "" {
-		fmt.Fprintln(os.Stderr, "Search var cannot be empty")
-		os.Exit(1)
-	}
-
-	fmt.Printf("commit: %s\n", commit)
-	fmt.Printf("ignoreCase: %v\n", ignoreCase)
-	fmt.Printf("help: %v\n", help)
-	fmt.Printf("removed: %v\n", removed)
-	fmt.Printf("regex: %v\n", regex)
-	fmt.Printf("search: %s\n", search)
 
 }
 
@@ -86,6 +71,13 @@ func findRegex(diffs []*diff, regexp *regexp.Regexp, removed bool) []*diff {
 
 func main() {
 
+	searchTerms := flag.Args()
+
+	if len(searchTerms) == 0 {
+		//todo: warn
+		os.Exit(0)
+	}
+
 	var c *exec.Cmd
 
 	if commit == "" {
@@ -116,18 +108,20 @@ func main() {
 		panic(err)
 	}
 
-	//
-
-	var foundDiffs []*diff
+	var foundDiffs = make([]*diff, 0, 10)
 
 	if regex {
-		regexp, err := regexp.Compile(search)
-		if err != nil {
-			panic(err)
+		for _, searchTerm := range searchTerms {
+			regexp, err := regexp.Compile(searchTerm)
+			if err != nil {
+				panic(err)
+			}
+			foundDiffs = append(foundDiffs, findRegex(diffs, regexp, removed)...)
 		}
-		foundDiffs = findRegex(diffs, regexp, removed)
 	} else {
-		foundDiffs = find(diffs, flag.Arg(0), ignoreCase, removed)
+		for _, word := range searchTerms {
+			foundDiffs = append(foundDiffs, find(diffs, word, ignoreCase, removed)...)
+		}
 	}
 
 	for _, foundDiff := range foundDiffs {

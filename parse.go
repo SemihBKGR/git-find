@@ -26,7 +26,7 @@ func parseDiff(s string) ([]*diff, error) {
 	changedFiles := splitByLinePrefix(s, "diff --git")
 	for i := 0; i < len(changedFiles); i++ {
 		changedSnippets := splitByLinePrefix(changedFiles[i], "@@")
-		filename := parseMetadata(changedSnippets[0])
+		preFilename, newFilename := parseMetadata(changedSnippets[0])
 		for j := 1; j < len(changedSnippets); j++ {
 			lines := strings.Split(changedSnippets[j], "\n")
 			minusLineNumber, plusLineNumber := extractLineNumber(lines[0])
@@ -35,7 +35,7 @@ func parseDiff(s string) ([]*diff, error) {
 				if len(line) > 0 && (line[0] == '+' || line[0] == '-') {
 					if line[0] == '-' {
 						diffLine := diff{
-							filename:   filename,
+							filename:   preFilename,
 							content:    line[1:],
 							isAdded:    false,
 							lineNumber: minusLineNumber,
@@ -44,7 +44,7 @@ func parseDiff(s string) ([]*diff, error) {
 						minusLineNumber++
 					} else {
 						diffLine := diff{
-							filename:   filename,
+							filename:   newFilename,
 							content:    line[1:],
 							isAdded:    true,
 							lineNumber: plusLineNumber,
@@ -62,13 +62,19 @@ func parseDiff(s string) ([]*diff, error) {
 	return diffs, nil
 }
 
-func parseMetadata(m string) string {
+func parseMetadata(m string) (string, string) {
+	preFilename := ""
+	newFilename := ""
 	for _, l := range strings.Split(m, "\n") {
-		if strings.HasPrefix(l, "+++") {
-			return l[6:]
+		if strings.HasPrefix(l, "---") {
+			i := strings.IndexRune(l, '/')
+			preFilename = l[i+1:]
+		} else if strings.HasPrefix(l, "+++") {
+			i := strings.IndexRune(l, '/')
+			newFilename = l[i+1:]
 		}
 	}
-	return ""
+	return preFilename, newFilename
 }
 
 func extractLineNumber(m string) (uint, uint) {

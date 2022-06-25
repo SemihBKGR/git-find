@@ -1,3 +1,5 @@
 # git-find
 
-utility tool to find something on git commits
+utility tool to search texts on specific git commits
+
+
