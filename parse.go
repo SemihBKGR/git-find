@@ -23,24 +23,38 @@ func (d *diff) String() string {
 
 func parseDiff(s string) ([]*diff, error) {
 	diffs := make([]*diff, 0, 10)
-	changeFiles := strings.Split(s, "diff --git")
-	for _, changeFile := range changeFiles {
-		changes := strings.Split(changeFile, "@@")
-		filename := parseMetadata(changes[0])
-		for i := 1; i < len(changes); i++ {
-			lines := strings.Split(changes[i], "\n")
-			lineNumber := extractLineNumber(lines[0])
-			for j := 1; j < len(lines); j++ {
-				line := lines[j]
-				lineNumber++
+	changedFiles := splitByLinePrefix(s, "diff --git")
+	for i := 0; i < len(changedFiles); i++ {
+		changedSnippets := splitByLinePrefix(changedFiles[i], "@@")
+		filename := parseMetadata(changedSnippets[0])
+		for j := 1; j < len(changedSnippets); j++ {
+			lines := strings.Split(changedSnippets[j], "\n")
+			minuslineNumber, plusLineNumber := extractLineNumber(lines[0])
+			for k := 1; k < len(lines); k++ {
+				line := lines[k]
 				if len(line) > 0 && (line[0] == '+' || line[0] == '-') {
-					diffLine := diff{
-						filename:   filename,
-						content:    line[1:],
-						isAdded:    line[0] == '+',
-						lineNumber: lineNumber,
+					if line[0] == '-' {
+						diffLine := diff{
+							filename:   filename,
+							content:    line[1:],
+							isAdded:    false,
+							lineNumber: minuslineNumber,
+						}
+						diffs = append(diffs, &diffLine)
+						minuslineNumber++
+					} else {
+						diffLine := diff{
+							filename:   filename,
+							content:    line[1:],
+							isAdded:    true,
+							lineNumber: plusLineNumber,
+						}
+						diffs = append(diffs, &diffLine)
+						plusLineNumber++
 					}
-					diffs = append(diffs, &diffLine)
+				} else {
+					minuslineNumber++
+					plusLineNumber++
 				}
 			}
 		}
@@ -57,18 +71,44 @@ func parseMetadata(m string) string {
 	return ""
 }
 
-func extractLineNumber(m string) uint {
+func extractLineNumber(m string) (uint, uint) {
+	var minus uint = 0
+	var plus uint = 0
+	if strings.Contains(m, "-") && strings.Contains(m, ",") {
+		startIndex := strings.IndexRune(m, '-') + 1
+		endIndex := strings.IndexRune(m[startIndex:], ',') + startIndex
+		numberStr := m[startIndex:endIndex]
+		number, err := strconv.ParseUint(numberStr, 10, 0)
+		if err != nil {
+			minus = 0
+		}
+		minus = uint(number)
+	}
 	if strings.Contains(m, "+") && strings.Contains(m, ",") {
 		startIndex := strings.IndexRune(m, '+') + 1
 		endIndex := strings.IndexRune(m[startIndex:], ',') + startIndex
 		numberStr := m[startIndex:endIndex]
 		number, err := strconv.ParseUint(numberStr, 10, 0)
 		if err != nil {
-			return 0
+			plus = 0
 		}
-		return uint(number)
+		plus = uint(number)
 	}
-	return 0
+	return minus, plus
+}
+
+func splitByLinePrefix(s, p string) []string {
+	split := make([]string, 0, 10)
+	lines := strings.Split(s, "\n")
+	sb := strings.Builder{}
+	for i, line := range lines {
+		if strings.HasPrefix(line, p) && i != 0 {
+			split = append(split, sb.String())
+			sb = strings.Builder{}
+		}
+		sb.WriteString(line + "\n")
+	}
+	return append(split, sb.String())
 }
 
 func find(diffs []*diff, keyword string) []*diff {

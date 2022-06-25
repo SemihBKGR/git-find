@@ -1,39 +1,44 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"os"
+	"os/exec"
 )
 
 func main() {
 
-	//c := exec.Command("git", "--no-pager", "diff", "HEAD~1", "HEAD")
-	//
-	//r, err := c.Output()
-	//
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//s := string(r)
-	//
-	//fmt.Println(s)
+	commit := flag.String("commit", "", "commit")
+	flag.Parse()
 
-	bytes, err := os.ReadFile("testdata/diff.txt")
+	var c *exec.Cmd
+
+	if *commit == "" {
+		c = exec.Command("git", "--no-pager", "diff")
+	} else {
+		c = exec.Command("git", "--no-pager", "diff", *commit+"~1", *commit)
+	}
+
+	r, err := c.Output()
 
 	if err != nil {
 		panic(err)
 	}
 
-	diffs, err := parseDiff(string(bytes))
+	s := string(r)
+
+	diffs, err := parseDiff(s)
 
 	if err != nil {
 		panic(err)
 	}
+
 	foundDiffs := find(diffs, "Diff")
 
 	for _, foundDiff := range foundDiffs {
-		fmt.Println(foundDiff)
+		if foundDiff.isAdded {
+			fmt.Println(foundDiff)
+		}
 	}
 
 }
