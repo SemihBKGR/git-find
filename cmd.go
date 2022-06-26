@@ -45,29 +45,22 @@ func main() {
 	}
 
 	dir, err := os.Getwd()
-
 	if err != nil {
 		panic(err)
 	}
-
 	c.Dir = dir
 
 	r, err := c.Output()
-
 	if err != nil {
 		panic(err)
 	}
 
-	s := string(r)
-
-	diffs, err := parseDiff(s)
-
+	diffs, err := parseDiff(string(r))
 	if err != nil {
 		panic(err)
 	}
 
 	foundDiffs, err := find(diffs, searchTerms, ignoreCase, removed, regex)
-
 	if err != nil {
 		panic(err)
 	}

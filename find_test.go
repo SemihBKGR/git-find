@@ -7,7 +7,7 @@ import (
 
 func TestFind(t *testing.T) {
 
-	bytes, err := os.ReadFile("testdata/diff.txt")
+	bytes, err := os.ReadFile("testdata/9aaf0b4.diff")
 
 	if err != nil {
 		t.Fatal(err)
@@ -19,9 +19,9 @@ func TestFind(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedFoundDiffsLen := 6
+	expectedFoundDiffsLen := 3
 
-	foundDiffs, err := find(diffs, []string{"Diff"}, false, true, false)
+	foundDiffs, err := find(diffs, []string{"todo", "func"}, true, true, false)
 
 	if err != nil {
 		t.Fatal(err)

@@ -27,10 +27,11 @@ func findKeyword(diffs []*diff, keyword string, ignoreCase, removed bool) []*dif
 	}
 	foundDiffs := make([]*diff, 0, 10)
 	for _, d := range diffs {
+		lineContent := d.content
 		if ignoreCase {
-			d.content = strings.ToLower(d.content)
+			lineContent = strings.ToLower(lineContent)
 		}
-		if strings.Contains(d.content, keyword) {
+		if strings.Contains(lineContent, keyword) {
 			if !removed && !d.isAdded {
 				continue
 			}

@@ -7,7 +7,7 @@ import (
 
 func TestParseDiff(t *testing.T) {
 
-	bytes, err := os.ReadFile("testdata/diff.txt")
+	bytes, err := os.ReadFile("testdata/9aaf0b4.diff")
 
 	if err != nil {
 		t.Fatal(err)
@@ -19,7 +19,7 @@ func TestParseDiff(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedDiffsLen := 45
+	expectedDiffsLen := 68
 
 	if len(diffs) != expectedDiffsLen {
 		t.Fatalf("expected len of diffs is %d, but actual value is %d", expectedDiffsLen, len(diffs))
