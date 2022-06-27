@@ -39,9 +39,9 @@ func main() {
 	var c *exec.Cmd
 
 	if commit == "" {
-		c = exec.Command("git", "--no-pager", "diff")
+		c = exec.Command("git", "--no-pager", "diffLine")
 	} else {
-		c = exec.Command("git", "--no-pager", "diff", commit+"~1", commit)
+		c = exec.Command("git", "--no-pager", "diffLine", commit+"~1", commit)
 	}
 
 	dir, err := os.Getwd()
@@ -60,7 +60,12 @@ func main() {
 		panic(err)
 	}
 
-	foundDiffs, err := find(diffs, searchTerms, ignoreCase, removed, regex)
+	diffLines := make([]*diffLine, 0, 10)
+	for _, diffFile := range diffs.files {
+		diffLines = append(diffLines, diffFile.lines...)
+	}
+
+	foundDiffs, err := find(diffLines, searchTerms, ignoreCase, removed, regex)
 	if err != nil {
 		panic(err)
 	}

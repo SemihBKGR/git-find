@@ -1,34 +1,30 @@
 package main
 
 import (
-	"os"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestFind(t *testing.T) {
+	assert := assert.New(t)
 
-	bytes, err := os.ReadFile("testdata/9aaf0b4.diff")
+	output := readTestdata("9aaf0b4.diff", t)
 
+	diffs, err := parseDiff(output)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	diffs, err := parseDiff(string(bytes))
+	diffLines := make([]*diffLine, 0, 10)
+	for _, diffFile := range diffs.files {
+		diffLines = append(diffLines, diffFile.lines...)
+	}
 
+	foundDiffs, err := find(diffLines, []string{"todo", "func"}, true, true, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expectedFoundDiffsLen := 3
-
-	foundDiffs, err := find(diffs, []string{"todo", "func"}, true, true, false)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(foundDiffs) != expectedFoundDiffsLen {
-		t.Fatalf("expected len of found diffs is %d, but actual value is %d", expectedFoundDiffsLen, len(foundDiffs))
-	}
+	assert.Equal(3, len(foundDiffs))
 
 }

@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-func find(diffs []*diff, searchTerms []string, ignoreCase, removed, regex bool) ([]*diff, error) {
-	foundDiffs := make([]*diff, 0, 10)
+func find(diffs []*diffLine, searchTerms []string, ignoreCase, removed, regex bool) ([]*diffLine, error) {
+	foundDiffs := make([]*diffLine, 0, 10)
 	for _, searchTerm := range searchTerms {
 		if regex {
 			r, err := regexp.Compile(searchTerm)
@@ -21,18 +21,18 @@ func find(diffs []*diff, searchTerms []string, ignoreCase, removed, regex bool) 
 	return foundDiffs, nil
 }
 
-func findKeyword(diffs []*diff, keyword string, ignoreCase, removed bool) []*diff {
+func findKeyword(diffs []*diffLine, keyword string, ignoreCase, removed bool) []*diffLine {
 	if ignoreCase {
 		keyword = strings.ToLower(keyword)
 	}
-	foundDiffs := make([]*diff, 0, 10)
+	foundDiffs := make([]*diffLine, 0, 10)
 	for _, d := range diffs {
 		lineContent := d.content
 		if ignoreCase {
 			lineContent = strings.ToLower(lineContent)
 		}
 		if strings.Contains(lineContent, keyword) {
-			if !removed && !d.isAdded {
+			if !removed && !d.added {
 				continue
 			}
 			foundDiffs = append(foundDiffs, d)
@@ -41,11 +41,11 @@ func findKeyword(diffs []*diff, keyword string, ignoreCase, removed bool) []*dif
 	return foundDiffs
 }
 
-func findRegex(diffs []*diff, regexp *regexp.Regexp, removed bool) []*diff {
-	foundDiffs := make([]*diff, 0, 10)
+func findRegex(diffs []*diffLine, regexp *regexp.Regexp, removed bool) []*diffLine {
+	foundDiffs := make([]*diffLine, 0, 10)
 	for _, d := range diffs {
 		if regexp.MatchString(d.content) {
-			if !removed && !d.isAdded {
+			if !removed && !d.added {
 				continue
 			}
 			foundDiffs = append(foundDiffs, d)
