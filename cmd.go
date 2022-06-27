@@ -5,7 +5,6 @@ import (
 	"github.com/gookit/color"
 	"os"
 	"os/exec"
-	"strings"
 )
 
 func main() {
@@ -15,14 +14,12 @@ func main() {
 		ignoreCase bool
 		help       bool
 		removed    bool
-		regex      bool
 	)
 
 	flag.StringVar(&commit, "commit", "", "the commit on which you want to findKeyword")
 	flag.BoolVar(&ignoreCase, "ignore-case", false, "ignore case sensitivity")
 	flag.BoolVar(&help, "help", false, "print args")
 	flag.BoolVar(&removed, "removed", false, "include removed lines")
-	flag.BoolVar(&regex, "regex", false, "apply regex")
 	flag.Parse()
 
 	if help {
@@ -50,7 +47,6 @@ func main() {
 	fo := findOptions{
 		ignoreCase: ignoreCase,
 		removed:    removed,
-		regex:      regex,
 	}
 
 	c := find(diff, searchTerms, fo)
@@ -86,7 +82,7 @@ func gitDiff(commit string) (string, error) {
 }
 
 func printFindResult(r findResult) {
-	if len(r.lines) == 0 {
+	if len(r.occurrences) == 0 {
 		return
 	}
 	if r.file.newFilename == r.file.oldFilename {
@@ -94,24 +90,44 @@ func printFindResult(r findResult) {
 	} else {
 		color.Yellowf("%s -> %s\n", r.file.oldFilename, r.file.newFilename)
 	}
-	for _, l := range r.lines {
-		if l.added {
-			color.Greenf("+ %d\t|", l.lineNumber)
-			printLineByOccurrences(l.content, r.searchTerm, color.Green, color.Magenta)
+	for _, lo := range r.occurrences {
+		if lo.line.added {
+			color.Greenf("+ %d\t|", lo.line.lineNumber)
+			printLineByHighlightingOccurrences(lo.line.content, lo, color.Green, color.Magenta)
 		} else {
-			color.Redf("- %d\t|", l.lineNumber)
-			printLineByOccurrences(l.content, r.searchTerm, color.Red, color.Magenta)
+			color.Redf("- %d\t|", lo.line.lineNumber)
+			printLineByHighlightingOccurrences(lo.line.content, lo, color.Red, color.Magenta)
 		}
 	}
 }
 
-func printLineByOccurrences(s, o string, mc, oc color.Color) {
-	i := strings.Index(s, o)
-	if i == -1 {
-		mc.Println(s)
-		return
+func printLineByHighlightingOccurrences(s string, lo *lineOccurrence, mc, oc color.Color) {
+	occurrenceIndexPairs := make([][2]uint, 0, 10)
+	i := 0
+	for st, indexes := range lo.occurrences {
+		stLen := uint(len(st))
+		for _, index := range indexes {
+			occurrenceIndexPairs = append(occurrenceIndexPairs, [2]uint{index, index + stLen})
+			i++
+		}
 	}
-	mc.Print(s[0:i])
-	oc.Print(o)
-	mc.Println(s[i+len(o):])
+
+	for i := 0; i < len(occurrenceIndexPairs); i++ {
+		for j := 0; j < len(occurrenceIndexPairs); j++ {
+			if occurrenceIndexPairs[i][0] > occurrenceIndexPairs[j][0] {
+				pair := occurrenceIndexPairs[j]
+				occurrenceIndexPairs[j] = occurrenceIndexPairs[i]
+				occurrenceIndexPairs[i] = pair
+			}
+		}
+	}
+
+	index := uint(0)
+	for _, p := range occurrenceIndexPairs {
+		mc.Print(s[index:p[0]])
+		oc.Print(s[p[0]:p[1]])
+		index = p[1]
+	}
+	mc.Println(s[index:])
+
 }

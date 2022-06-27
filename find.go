@@ -1,7 +1,6 @@
 package main
 
 import (
-	"regexp"
 	"strings"
 	"sync"
 )
@@ -9,30 +8,40 @@ import (
 type findOptions struct {
 	ignoreCase bool
 	removed    bool
-	regex      bool
 }
 
 type findResult struct {
-	searchTerm string
-	file       *diffFile
-	lines      []*diffLine
+	file        *diffFile
+	occurrences []*lineOccurrence
 }
 
 func newFindResult() findResult {
 	return findResult{
-		lines: make([]*diffLine, 0, 10),
+		occurrences: make([]*lineOccurrence, 0, 10),
+	}
+}
+
+type lineOccurrence struct {
+	line        *diffLine
+	occurrences map[string][]uint
+}
+
+func newLineOccurrences() *lineOccurrence {
+	return &lineOccurrence{
+		occurrences: make(map[string][]uint),
 	}
 }
 
 func find(diff *diff, sts []string, fo findOptions) <-chan findResult {
 	c := make(chan findResult)
 	wg := sync.WaitGroup{}
-	wg.Add(len(sts))
-	for _, st := range sts {
-		go func(st string) {
-			findBySearchTerm(diff, st, fo, c)
+	wg.Add(len(diff.files))
+	for _, df := range diff.files {
+		go func(df *diffFile) {
+			r := findByKeyword(df, sts, fo)
+			c <- r
 			wg.Done()
-		}(st)
+		}(df)
 	}
 	go func() {
 		wg.Wait()
@@ -41,67 +50,44 @@ func find(diff *diff, sts []string, fo findOptions) <-chan findResult {
 	return c
 }
 
-func findBySearchTerm(diff *diff, st string, fo findOptions, c chan<- findResult) {
-	if !fo.regex {
-		findByKeyword(diff, st, fo, c)
-	} else {
-		regexp, err := regexp.Compile(st)
-		if err != nil {
-			panic(err)
-		}
-		findByRegex(diff, regexp, fo, c)
-	}
-}
-
-func findByKeyword(diff *diff, keyword string, fo findOptions, c chan<- findResult) {
-	wg := sync.WaitGroup{}
-	wg.Add(len(diff.files))
+func findByKeyword(df *diffFile, keywords []string, fo findOptions) findResult {
+	r := newFindResult()
+	r.file = df
 	if fo.ignoreCase {
-		keyword = strings.ToLower(keyword)
+		for i, keyword := range keywords {
+			keywords[i] = strings.ToLower(keyword)
+		}
 	}
-	for _, df := range diff.files {
-		go func(df *diffFile) {
-			r := newFindResult()
-			r.searchTerm = keyword
-			r.file = df
-			for _, dl := range df.lines {
-				lineContent := dl.content
-				if fo.ignoreCase {
-					lineContent = strings.ToLower(lineContent)
-				}
-				if strings.Contains(lineContent, keyword) {
-					if !fo.removed && !dl.added {
-						continue
-					}
-					r.lines = append(r.lines, dl)
-				}
-			}
-			c <- r
-			wg.Done()
-		}(df)
+	for _, dl := range df.lines {
+		lineContent := dl.content
+		if fo.ignoreCase {
+			lineContent = strings.ToLower(lineContent)
+		}
+		ko := findKeywordOccurrences(lineContent, keywords)
+		if len(ko) > 0 {
+			lo := newLineOccurrences()
+			lo.line = dl
+			lo.occurrences = ko
+			r.occurrences = append(r.occurrences, lo)
+		}
 	}
-	wg.Wait()
+	return r
 }
 
-func findByRegex(diff *diff, regexp *regexp.Regexp, fo findOptions, c chan<- findResult) {
-	wg := sync.WaitGroup{}
-	wg.Add(len(diff.files))
-	for _, df := range diff.files {
-		go func(df *diffFile) {
-			r := newFindResult()
-			r.searchTerm = regexp.String()
-			r.file = df
-			for _, dl := range df.lines {
-				if regexp.MatchString(dl.content) {
-					if !fo.removed && !dl.added {
-						continue
-					}
-					r.lines = append(r.lines, dl)
-				}
+func findKeywordOccurrences(s string, ks []string) map[string][]uint {
+	m := make(map[string][]uint)
+	for _, k := range ks {
+		kLen := len(k)
+		from := 0
+		for i := strings.Index(s, k); i != -1; i = strings.Index(s[from:], k) {
+			if indexes, ok := m[k]; ok {
+				m[k] = append(indexes, uint(i+from))
+			} else {
+				indexes := make([]uint, 0, 10)
+				m[k] = append(indexes, uint(i+from))
 			}
-			c <- r
-			wg.Done()
-		}(df)
+			from += i + kLen
+		}
 	}
-	wg.Wait()
+	return m
 }
