@@ -7,15 +7,15 @@ import (
 	"os/exec"
 )
 
-var (
-	commit     string
-	ignoreCase bool
-	help       bool
-	removed    bool
-	regex      bool
-)
-
 func main() {
+
+	var (
+		commit     string
+		ignoreCase bool
+		help       bool
+		removed    bool
+		regex      bool
+	)
 
 	flag.StringVar(&commit, "commit", "", "the commit on which you want to findKeyword")
 	flag.BoolVar(&ignoreCase, "ignore-case", false, "ignore case sensitivity")
@@ -32,19 +32,20 @@ func main() {
 	searchTerms := flag.Args()
 
 	if len(searchTerms) == 0 {
-		//todo: warn
+		//todo: warn or print all changes
 		os.Exit(0)
 	}
 
 	var c *exec.Cmd
 
 	if commit == "" {
-		c = exec.Command("git", "--no-pager", "diffLine")
+		c = exec.Command("git", "--no-pager", "diff")
 	} else {
-		c = exec.Command("git", "--no-pager", "diffLine", commit+"~1", commit)
+		c = exec.Command("git", "--no-pager", "diff", commit+"~1", commit)
 	}
 
 	dir, err := os.Getwd()
+
 	if err != nil {
 		panic(err)
 	}
@@ -55,23 +56,28 @@ func main() {
 		panic(err)
 	}
 
-	diffs, err := parseDiff(string(r))
+	diff, err := parseDiff(string(r))
 	if err != nil {
 		panic(err)
 	}
 
-	diffLines := make([]*diffLine, 0, 10)
-	for _, diffFile := range diffs.files {
-		diffLines = append(diffLines, diffFile.lines...)
+	fo := findOptions{
+		ignoreCase: ignoreCase,
+		removed:    removed,
+		regex:      regex,
 	}
 
-	foundDiffs, err := find(diffLines, searchTerms, ignoreCase, removed, regex)
-	if err != nil {
-		panic(err)
-	}
+	rc := find(diff, searchTerms, fo)
+	done := false
 
-	for _, foundDiff := range foundDiffs {
-		fmt.Println(foundDiff)
+	for !done {
+		select {
+		case r, ok := <-rc:
+			done = !ok
+			if ok {
+				fmt.Println(r)
+			}
+		}
 	}
 
 }
