@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -45,7 +44,6 @@ func parseDiff(s string) (*diff, error) {
 						added:      added,
 						lineNumber: lineNumber,
 					}
-					diffLine.file = diffFile
 					diffFile.lines = append(diffFile.lines, &diffLine)
 				} else {
 					removeLineNumber++
@@ -71,23 +69,9 @@ func newDiffFile() *diffFile {
 }
 
 type diffLine struct {
-	file       *diffFile
 	content    string
 	lineNumber uint
 	added      bool
-}
-
-func (d diffLine) String() string {
-	var r rune
-	var filename string
-	if d.added {
-		r = '+'
-		filename = d.file.newFilename
-	} else {
-		r = '-'
-		filename = d.file.oldFilename
-	}
-	return fmt.Sprintf("%c %s %d\t\t\t| %s", r, filename, d.lineNumber, d.content)
 }
 
 func extractMetadata(s string) (string, string) {
