@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/gookit/color"
 	"os"
 	"os/exec"
@@ -32,8 +33,8 @@ func main() {
 	searchTerms := deduplicate(args, ignoreCase)
 
 	if len(searchTerms) == 0 {
-		//todo: warn or print all changes
-		os.Exit(0)
+		fmt.Fprintln(os.Stderr, "missing search terms")
+		os.Exit(1)
 	}
 
 	diffOutput, err := gitDiff(commit)
