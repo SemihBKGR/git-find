@@ -5,6 +5,7 @@ import (
 	"github.com/gookit/color"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 func main() {
@@ -27,7 +28,8 @@ func main() {
 		os.Exit(0)
 	}
 
-	searchTerms := flag.Args()
+	args := flag.Args()
+	searchTerms := deduplicate(args, ignoreCase)
 
 	if len(searchTerms) == 0 {
 		//todo: warn or print all changes
@@ -86,22 +88,22 @@ func printFindResult(r findResult) {
 		return
 	}
 	if r.file.newFilename == r.file.oldFilename {
-		color.Yellowf("%s\n", r.file.newFilename)
+		color.Bluef("%s\n", r.file.newFilename)
 	} else {
-		color.Yellowf("%s -> %s\n", r.file.oldFilename, r.file.newFilename)
+		color.Bluef("%s -> %s\n", r.file.oldFilename, r.file.newFilename)
 	}
 	for _, lo := range r.occurrences {
 		if lo.line.added {
 			color.Greenf("+ %d\t|", lo.line.lineNumber)
-			printLineByHighlightingOccurrences(lo.line.content, lo, color.Green, color.Magenta)
+			printLineByHighlightingOccurrences(lo.line.content, lo, color.Green, color.Yellow)
 		} else {
 			color.Redf("- %d\t|", lo.line.lineNumber)
-			printLineByHighlightingOccurrences(lo.line.content, lo, color.Red, color.Magenta)
+			printLineByHighlightingOccurrences(lo.line.content, lo, color.Red, color.Yellow)
 		}
 	}
 }
 
-func printLineByHighlightingOccurrences(s string, lo *lineOccurrence, mc, oc color.Color) {
+func printLineByHighlightingOccurrences(s string, lo *lineOccurrence, pc, sc color.Color) {
 	occurrenceIndexPairs := make([][2]uint, 0, 10)
 	i := 0
 	for st, indexes := range lo.occurrences {
@@ -124,10 +126,32 @@ func printLineByHighlightingOccurrences(s string, lo *lineOccurrence, mc, oc col
 
 	index := uint(0)
 	for _, p := range occurrenceIndexPairs {
-		mc.Print(s[index:p[0]])
-		oc.Print(s[p[0]:p[1]])
+		if index >= p[1] {
+			continue
+		}
+		if index >= p[0] {
+			sc.Print(s[index:p[1]])
+		} else {
+			pc.Print(s[index:p[0]])
+			sc.Print(s[p[0]:p[1]])
+		}
 		index = p[1]
 	}
-	mc.Println(s[index:])
+	pc.Println(s[index:])
 
+}
+
+func deduplicate(ss []string, ignoreCase bool) []string {
+	m := make(map[string]any)
+	for _, s := range ss {
+		if ignoreCase {
+			s = strings.ToLower(s)
+		}
+		m[s] = nil
+	}
+	uss := make([]string, 0, len(m))
+	for s, _ := range m {
+		uss = append(uss, s)
+	}
+	return uss
 }
