@@ -150,7 +150,7 @@ func deduplicate(ss []string, ignoreCase bool) []string {
 		m[s] = nil
 	}
 	uss := make([]string, 0, len(m))
-	for s, _ := range m {
+	for s := range m {
 		uss = append(uss, s)
 	}
 	return uss
