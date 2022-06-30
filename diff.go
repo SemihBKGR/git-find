@@ -80,10 +80,14 @@ func extractMetadata(s string) (string, string) {
 	for _, l := range strings.Split(s, "\n") {
 		if strings.HasPrefix(l, "+++") {
 			i := strings.IndexRune(l, '/')
-			newFilename = l[i+1:]
+			if filename := l[i+1:]; filename != "dev/null" {
+				newFilename = filename
+			}
 		} else if strings.HasPrefix(l, "---") {
 			i := strings.IndexRune(l, '/')
-			oldFilename = l[i+1:]
+			if filename := l[i+1:]; filename != "dev/null" {
+				oldFilename = filename
+			}
 		}
 	}
 	return newFilename, oldFilename
@@ -95,6 +99,9 @@ func extractLineNumber(s string) (uint, uint) {
 	if strings.Contains(s, "+") && strings.Contains(s, ",") {
 		startIndex := strings.IndexRune(s, '+') + 1
 		endIndex := strings.IndexRune(s[startIndex:], ',') + startIndex
+		if endIndex < startIndex {
+			endIndex = strings.IndexRune(s[startIndex:], ' ') + startIndex
+		}
 		numberStr := s[startIndex:endIndex]
 		number, err := strconv.ParseUint(numberStr, 10, 0)
 		if err != nil {
@@ -105,6 +112,9 @@ func extractLineNumber(s string) (uint, uint) {
 	if strings.Contains(s, "-") && strings.Contains(s, ",") {
 		startIndex := strings.IndexRune(s, '-') + 1
 		endIndex := strings.IndexRune(s[startIndex:], ',') + startIndex
+		if endIndex < startIndex {
+			endIndex = strings.IndexRune(s[startIndex:], ' ') + startIndex
+		}
 		numberStr := s[startIndex:endIndex]
 		number, err := strconv.ParseUint(numberStr, 10, 0)
 		if err != nil {
