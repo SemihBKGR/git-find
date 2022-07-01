@@ -29,11 +29,11 @@ func main() {
 		os.Exit(0)
 	}
 
-	args := flag.Args()
+	args := notBlankStrings(flag.Args())
 	searchTerms := deduplicate(args, ignoreCase)
 
 	if len(searchTerms) == 0 {
-		fmt.Fprintln(os.Stderr, "missing search terms")
+		_, _ = fmt.Fprintln(os.Stderr, "missing search terms")
 		os.Exit(1)
 	}
 
@@ -91,7 +91,13 @@ func printFindResult(r findResult) {
 	if r.file.newFilename == r.file.oldFilename {
 		color.Bluef("%s\n", r.file.newFilename)
 	} else {
-		color.Bluef("%s -> %s\n", r.file.oldFilename, r.file.newFilename)
+		if r.file.newFilename == "" {
+			color.Bluef("[old] %s\n", r.file.oldFilename)
+		} else if r.file.oldFilename == "" {
+			color.Bluef("[new] %s\n", r.file.newFilename)
+		} else {
+			color.Bluef("%s -> %s\n", r.file.oldFilename, r.file.newFilename)
+		}
 	}
 	for _, lo := range r.occurrences {
 		if lo.line.added {
@@ -155,4 +161,14 @@ func deduplicate(ss []string, ignoreCase bool) []string {
 		uss = append(uss, s)
 	}
 	return uss
+}
+
+func notBlankStrings(ss []string) []string {
+	ness := make([]string, 0, len(ss))
+	for _, s := range ss {
+		if len(strings.TrimSpace(s)) != 0 {
+			ness = append(ness, s)
+		}
+	}
+	return ness
 }
