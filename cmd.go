@@ -56,12 +56,10 @@ func main() {
 	done := false
 
 	for !done {
-		select {
-		case r, ok := <-c:
-			done = !ok
-			if ok {
-				printFindResult(r)
-			}
+		r, ok := <-c
+		done = !ok
+		if ok {
+			printFindResult(r)
 		}
 	}
 

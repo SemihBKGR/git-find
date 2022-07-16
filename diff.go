@@ -105,9 +105,8 @@ func extractLineNumber(s string) (uint, uint) {
 		numberStr := s[startIndex:endIndex]
 		number, err := strconv.ParseUint(numberStr, 10, 0)
 		if err != nil {
-			add = 0
+			add = uint(number)
 		}
-		add = uint(number)
 	}
 	if strings.Contains(s, "-") && strings.Contains(s, ",") {
 		startIndex := strings.IndexRune(s, '-') + 1
@@ -118,9 +117,8 @@ func extractLineNumber(s string) (uint, uint) {
 		numberStr := s[startIndex:endIndex]
 		number, err := strconv.ParseUint(numberStr, 10, 0)
 		if err != nil {
-			remove = 0
+			remove = uint(number)
 		}
-		remove = uint(number)
 	}
 	return add, remove
 }
