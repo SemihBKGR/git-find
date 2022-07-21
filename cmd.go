@@ -9,14 +9,23 @@ import (
 	"strings"
 )
 
+const v = "1.2.1"
+
 var (
 	commit     = flag.String("commit", "", "the commit on which you want to findKeyword")
 	ignoreCase = flag.Bool("ignore-case", false, "ignore case sensitivity")
 	removed    = flag.Bool("removed", false, "include removed lines")
+	indexed    = flag.Bool("indexed", false, "indexed output")
+	version    = flag.Bool("version", false, "prints current version")
 )
 
 func main() {
 	flag.Parse()
+
+	if *version {
+		fmt.Printf("Version: %s\n", v)
+		os.Exit(0)
+	}
 
 	args := notBlankStrings(flag.Args())
 	searchTerms := deduplicate(args, *ignoreCase)
@@ -42,7 +51,6 @@ func main() {
 
 	c := find(diff, searchTerms, fo)
 	done := false
-
 	for !done {
 		r, ok := <-c
 		done = !ok
@@ -86,10 +94,18 @@ func printFindResult(r findResult) {
 	}
 	for _, lo := range r.occurrences {
 		if lo.line.added {
-			color.Greenf("+ %d\t|", lo.line.lineNumber)
+			if *indexed {
+				color.Greenf("+ %s:%d\t|", r.file.newFilename, lo.line.lineNumber)
+			} else {
+				color.Greenf("+ %d\t|", lo.line.lineNumber)
+			}
 			printLineByHighlightingOccurrences(lo.line.content, lo.occurrences, color.Green, color.Yellow)
 		} else if *removed {
-			color.Redf("- %d\t|", lo.line.lineNumber)
+			if *indexed {
+				color.Redf("- %s:%d\t|", r.file.oldFilename, lo.line.lineNumber)
+			} else {
+				color.Redf("- %d\t|", lo.line.lineNumber)
+			}
 			printLineByHighlightingOccurrences(lo.line.content, lo.occurrences, color.Red, color.Yellow)
 		}
 	}

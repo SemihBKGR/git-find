@@ -23,9 +23,9 @@ to find 'todo' and 'func' keywords on commit '9aaf0b4'
 
 ```shell
 git find --commit=9aaf0b4 --ignore-case --removed todo func
-# --commit: defines on which commit you want to search
-# --ignore-case: ignore cases in search terms
-# --removed: includes removed lines
+# --commit: defines which commit you want to search on
+# --ignore-case: apply case-insensitive search
+# --removed: prints removed lines as well
 ```
 
 output
@@ -37,8 +37,3 @@ to list all available args
 ```shell
 git-find --help
 ```
-
-## TODO
-
-- ide indexed output support
-- git repository dir path arg
