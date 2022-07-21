@@ -9,6 +9,8 @@
 git find [args --commit=<hash> --ignore-case ...] [search terms]
 ```
 
+to list all available args: 'git-find --help'
+
 ### Installation
 
 ```shell
@@ -35,3 +37,8 @@ to list all available args
 ```shell
 git-find --help
 ```
+
+## TODO
+
+- ide indexed output support
+- git repository dir path arg

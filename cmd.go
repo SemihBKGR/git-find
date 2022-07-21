@@ -9,35 +9,23 @@ import (
 	"strings"
 )
 
+var (
+	commit     = flag.String("commit", "", "the commit on which you want to findKeyword")
+	ignoreCase = flag.Bool("ignore-case", false, "ignore case sensitivity")
+	removed    = flag.Bool("removed", false, "include removed lines")
+)
+
 func main() {
-
-	var (
-		commit     string
-		ignoreCase bool
-		help       bool
-		removed    bool
-	)
-
-	flag.StringVar(&commit, "commit", "", "the commit on which you want to findKeyword")
-	flag.BoolVar(&ignoreCase, "ignore-case", false, "ignore case sensitivity")
-	flag.BoolVar(&help, "help", false, "print args")
-	flag.BoolVar(&removed, "removed", false, "include removed lines")
 	flag.Parse()
 
-	if help {
-		flag.PrintDefaults()
-		os.Exit(0)
-	}
-
 	args := notBlankStrings(flag.Args())
-	searchTerms := deduplicate(args, ignoreCase)
-
+	searchTerms := deduplicate(args, *ignoreCase)
 	if len(searchTerms) == 0 {
-		_, _ = fmt.Fprintln(os.Stderr, "missing search terms")
+		fmt.Fprintln(os.Stderr, "missing search terms")
 		os.Exit(1)
 	}
 
-	diffOutput, err := gitDiff(commit)
+	diffOutput, err := gitDiff(*commit)
 	if err != nil {
 		panic(err)
 	}
@@ -48,8 +36,8 @@ func main() {
 	}
 
 	fo := findOptions{
-		ignoreCase: ignoreCase,
-		removed:    removed,
+		ignoreCase: *ignoreCase,
+		removed:    *removed,
 	}
 
 	c := find(diff, searchTerms, fo)
@@ -62,7 +50,6 @@ func main() {
 			printFindResult(r)
 		}
 	}
-
 }
 
 func gitDiff(commit string) (string, error) {
@@ -100,35 +87,33 @@ func printFindResult(r findResult) {
 	for _, lo := range r.occurrences {
 		if lo.line.added {
 			color.Greenf("+ %d\t|", lo.line.lineNumber)
-			printLineByHighlightingOccurrences(lo.line.content, lo, color.Green, color.Yellow)
-		} else {
+			printLineByHighlightingOccurrences(lo.line.content, lo.occurrences, color.Green, color.Yellow)
+		} else if *removed {
 			color.Redf("- %d\t|", lo.line.lineNumber)
-			printLineByHighlightingOccurrences(lo.line.content, lo, color.Red, color.Yellow)
+			printLineByHighlightingOccurrences(lo.line.content, lo.occurrences, color.Red, color.Yellow)
 		}
 	}
 }
 
-func printLineByHighlightingOccurrences(s string, lo *lineOccurrence, pc, sc color.Color) {
+func printLineByHighlightingOccurrences(s string, lo map[string][]uint, pc, sc color.Color) {
 	occurrenceIndexPairs := make([][2]uint, 0, 10)
 	i := 0
-	for st, indexes := range lo.occurrences {
+	for st, indexes := range lo {
 		stLen := uint(len(st))
 		for _, index := range indexes {
 			occurrenceIndexPairs = append(occurrenceIndexPairs, [2]uint{index, index + stLen})
 			i++
 		}
 	}
-
 	for i := 0; i < len(occurrenceIndexPairs); i++ {
 		for j := 0; j < len(occurrenceIndexPairs); j++ {
-			if occurrenceIndexPairs[i][0] > occurrenceIndexPairs[j][0] {
+			if occurrenceIndexPairs[i][0] < occurrenceIndexPairs[j][0] {
 				pair := occurrenceIndexPairs[j]
 				occurrenceIndexPairs[j] = occurrenceIndexPairs[i]
 				occurrenceIndexPairs[i] = pair
 			}
 		}
 	}
-
 	index := uint(0)
 	for _, p := range occurrenceIndexPairs {
 		if index >= p[1] {
@@ -143,7 +128,6 @@ func printLineByHighlightingOccurrences(s string, lo *lineOccurrence, pc, sc col
 		index = p[1]
 	}
 	pc.Println(s[index:])
-
 }
 
 func deduplicate(ss []string, ignoreCase bool) []string {
