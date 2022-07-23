@@ -32,6 +32,12 @@ output
 
 ![output](./output.png)
 
+to search on working tree, do not pass 'commit' arg.
+
+```shell
+git find [search terms]
+```
+
 to list all available args
 
 ```shell

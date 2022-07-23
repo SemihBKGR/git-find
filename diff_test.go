@@ -17,16 +17,28 @@ func TestParseDiff(t *testing.T) {
 	}
 
 	assert.Equal(3, len(diff.files))
-}
 
-func TestSplitByLinePrefix(t *testing.T) {
-	assert := assert.New(t)
+	filesOldName := mapSlice(diff.files, func(df *diffFile) string {
+		return df.oldFilename
+	})
+	assert.Contains(filesOldName, "find.go")
+	assert.Contains(filesOldName, "parse.go")
+	assert.Contains(filesOldName, "README.md")
 
-	output := readTestdata("9aaf0b4.diff", t)
+	filesNewName := mapSlice(diff.files, func(df *diffFile) string {
+		return df.newFilename
+	})
+	assert.Contains(filesNewName, "find.go")
+	assert.Contains(filesNewName, "parse.go")
+	assert.Contains(filesNewName, "README.md")
 
-	splits := splitByLinePrefix(output, "diff --git")
+	/*
+		filesDiffLines := mapSlice(diff.files, func(df *diffFile) []*diffLine {
+			return df.lines
+		})
+	*/
+	//todo: *diffLine assertion
 
-	assert.Equal(3, len(splits))
 }
 
 func readTestdata(filename string, t *testing.T) string {
@@ -35,4 +47,12 @@ func readTestdata(filename string, t *testing.T) string {
 		t.Fatal(err)
 	}
 	return string(bytes)
+}
+
+func mapSlice[T, R any](s []T, f func(T) R) []R {
+	r := make([]R, len(s))
+	for _, i := range s {
+		r = append(r, f(i))
+	}
+	return r
 }

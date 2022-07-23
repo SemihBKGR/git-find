@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-const v = "1.2.1"
+const v = "1.2.0"
 
 var (
 	commit     = flag.String("commit", "", "the commit on which you want to findKeyword")
